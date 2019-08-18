@@ -12,7 +12,12 @@ namespace Utils.Validation
         {
             validationMessages = new List<ValidationMessage>();
         }
-        
+        public ValidationResult(ValidationMessage message)
+        {
+            validationMessages = new List<ValidationMessage>();
+            Add(message);
+        }
+
         public List<ValidationMessage> Messages => validationMessages;
 
         public void Add(ValidationMessage validationMessage)

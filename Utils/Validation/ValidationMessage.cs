@@ -1,3 +1,5 @@
+using System;
+
 namespace Utils.Validation
 {
     public class ValidationMessage
@@ -12,6 +14,16 @@ namespace Utils.Validation
         {
             this.message = message;
             this.level = level;
+        }
+        public static ValidationMessage Fehler(string message)
+        {
+            return new ValidationMessage(message,ValidationLevel.Error);
+        }
+
+        public ValidationMessage(Exception exception)
+        {
+            this.message = exception.ToString();
+            this.level = ValidationLevel.Error;
         }
 
         public bool IsErrorMessage => level == ValidationLevel.Error;

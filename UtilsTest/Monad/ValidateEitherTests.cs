@@ -1,18 +1,21 @@
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using Utils.Monad;
-using Utils.Validation;
 
 namespace UtilsTest.Monad
 {
     public class ValidateEitherTests
     {
-       
+
+
+        #region Function Returns Either<ValidationResult,TResult>
+
         [Test]
-        public void WennFehlerfreiValidationMessage_TestfunktionReturnsError_ShouldHaveError()
+        public void WennFehlerfreiValidationResult_TestfunktionReturnsError_ShouldHaveError()
         {
-            ValidateEither<Test> sut = new ValidateEither<Test>(new Test());
-            var result = sut.Try(x => x.Testfunktion("falscher String"));
+            ValidationResultOr<Test> sut = new ValidationResultOr<Test>(new Test());
+            var result = sut.Try(x => x.ReturnsValidationResultWithError("falscher String"));
             
             Assert.That(result.HasErrors(),Is.EqualTo(true));
             Assert.That(result.ValidationResult.Messages.Count, Is.EqualTo(1));
@@ -20,113 +23,133 @@ namespace UtilsTest.Monad
         }
         
         [Test]
-        public void WennFehlerfreiValidationMessage_TestfunktionReturnsError_ShouldNotExcecute2Funktion()
+        public void WennFehlerfreiValidationResult_TestfunktionReturnsError_ShouldNotExcecute2Funktion()
         {
-            ValidateEither<Test> sut = new ValidateEither<Test>(new Test());
-            var result = sut.Try(x => x.Testfunktion("falscher String"));
+            ValidationResultOr<Test> sut = new ValidationResultOr<Test>(new Test());
+            var result = sut.Try(x => x.ReturnsValidationResultWithError("falscher String"));
             
             result.Try<bool>(x =>
             {
-                Assert.Fail($"Diese Zeile hätte nicht ausgeführt werden dürfen, da vorher ein Fehler in {nameof(Test.Testfunktion)} aufgetreten ist.");
+                Assert.Fail($"Diese Zeile hätte nicht ausgeführt werden dürfen, da vorher ein Fehler in {nameof(Test.ReturnsValidationResultWithError)} aufgetreten ist.");
                 return true;
             });
         }
 
         [Test]
-        public void WennFehlerfreiValidationMessage_TestfunktionReturnsNull_ShouldHaveError()
+        public void WennFehlerfreiValidationResult_TestfunktionReturnsNull_ShouldHaveError()
         {
-            ValidateEither<Test> sut = new ValidateEither<Test>(new Test());
-            var result = sut.Try(x => x.ReturnsNull());
+            ValidationResultOr<Test> sut = new ValidationResultOr<Test>(new Test());
+            var result = sut.Try(x => x.ReturnsNullEitherValidationResult());
             
             Assert.That(result.HasErrors(),Is.EqualTo(true));
             Assert.That(result.ValidationResult.Messages.Count, Is.EqualTo(1));
-            Assert.True(result.ValidationResult.Messages.Single().Message.Contains("System.String in Funktion Utils.Monad.Either`2["));
+            Assert.True(result.ValidationResult.Messages.Single().Message.Contains("darf nicht null sein"));
         }
         
         [Test]
-        public void WennFehlerfreiValidationMessage_TestfunktionReturnsNull_ShouldNotExcecute2Funktion()
+        public void WennFehlerfreiValidationResult_TestfunktionReturnsNull_ShouldNotExcecute2Funktion()
         {
-            ValidateEither<Test> sut = new ValidateEither<Test>(new Test());
-            var result = sut.Try(x => x.ReturnsNull());
+            ValidationResultOr<Test> sut = new ValidationResultOr<Test>(new Test());
+            var result = sut.Try(x => x.ReturnsNullEitherValidationResult());
             
             result.Try<bool>(x =>
             {
-                Assert.Fail($"Diese Zeile hätte nicht ausgeführt werden dürfen, da vorher ein Fehler in {nameof(Test.Testfunktion)} aufgetreten ist.");
+                Assert.Fail($"Diese Zeile hätte nicht ausgeführt werden dürfen, da vorher ein Fehler in {nameof(Test.ReturnsNullEitherValidationResult)} aufgetreten ist.");
                 return true;
             });
         }
 
         [Test]
-        public void WennFehlerfreiValidationMessage_TestfunktionThrowsException_ShouldHaveError()
+        public void WennFehlerfreiValidationResult_TestfunktionThrowsException_ShouldHaveError()
         {
-            ValidateEither<Test> sut = new ValidateEither<Test>(new Test());
-            var result = sut.Try(x => x.ThrowsException());
+            ValidationResultOr<Test> sut = new ValidationResultOr<Test>(new Test());
+            var result = sut.Try(x => x.ThrowsExceptionEitherValidationResult());
             
             Assert.That(result.HasErrors(),Is.EqualTo(true));
             Assert.That(result.ValidationResult.Messages.Count, Is.EqualTo(1));
-            Assert.True(result.ValidationResult.Messages.Single().Message.Contains("System.String in Funktion Utils.Monad.Either`2["));
         }
         
         [Test]
-        public void WennFehlerfreiValidationMessage_TestfunktionTrhowsException_ShouldNotExcecute2Funktion()
+        public void WennFehlerfreiValidationResult_TestfunktionTrhowsException_ShouldNotExcecute2Funktion()
         {
-            ValidateEither<Test> sut = new ValidateEither<Test>(new Test());
-            var result = sut.Try(x => x.ThrowsException());
+            ValidationResultOr<Test> sut = new ValidationResultOr<Test>(new Test());
+            var result = sut.Try(x => x.ThrowsExceptionEitherValidationResult());
             
             result.Try<bool>(x =>
             {
-                Assert.Fail($"Diese Zeile hätte nicht ausgeführt werden dürfen, da vorher ein Fehler in {nameof(Test.Testfunktion)} aufgetreten ist.");
+                Assert.Fail($"Diese Zeile hätte nicht ausgeführt werden dürfen, da vorher ein Fehler in {nameof(Test.ThrowsExceptionEitherValidationResult)} aufgetreten ist.");
                 return true;
             });
         }
+        #endregion
+
+        #region Normal Function
+        
         [Test]
-        public void WennFehlerfreiValidationMessage_ErsteFunktionMitInfoZweiteFunktionMitFehler_ValidationResultShouldContainBothMessages()
+        public void WennFehlerfreiExceptionMethod_TestfunktionReturnsNull_ShouldHaveError()
         {
-            ValidateEither<Test> sut = new ValidateEither<Test>(new Test());
-            var result = sut.Try(x => x.ReturnsInfo());
+            ValidationResultOr<Test> sut = new ValidationResultOr<Test>(new Test());
+            var result = sut.Select(x => x.ReturnsNull());
             
-            result.Try<bool>(x =>
+            Assert.That(result.HasErrors(),Is.EqualTo(true));
+            Assert.That(result.ValidationResult.Messages.Count, Is.EqualTo(1));
+            Assert.True(result.ValidationResult.Messages.Single().Message.Contains("nicht null"));
+        }
+        
+        [Test]
+        public void WennFehlerfreiExceptionMethod_TestfunktionReturnsNull_ShouldNotExcecute2Funktion()
+        {
+            ValidationResultOr<Test> sut = new ValidationResultOr<Test>(new Test());
+            ValidationResultOr<string> result = sut.Select(x => x.ReturnsNull());
+            
+            result.Select<bool>(x =>
             {
-                Assert.Fail($"Diese Zeile hätte nicht ausgeführt werden dürfen, da vorher ein Fehler in {nameof(Test.ReturnsInfo)} aufgetreten ist.");
+                Assert.Fail($"Diese Zeile hätte nicht ausgeführt werden dürfen, da vorher ein Fehler in {nameof(Test.ReturnsNull)} aufgetreten ist.");
                 return true;
             });
         }
 
         [Test]
-        public void UsageFeelTest3()
+        public void WennFehlerfreiExceptionMethod_TestfunktionThrowsException_ShouldHaveError()
         {
-            ValidateEither<Test> sut = new ValidateEither<Test>(new Test());
-            var result = sut.Try(x => x.Testfunktion("test"));
+            ValidationResultOr<Test> sut = new ValidationResultOr<Test>(new Test());
+            var result = sut.Select(x => x.ThrowsException());
             
-            Assert.That(sut.HasErrors(),Is.EqualTo(false));
+            Assert.That(result.HasErrors(),Is.EqualTo(true));
+            Assert.That(result.ValidationResult.Messages.Count, Is.EqualTo(1));
+        }
+        
+        [Test]
+        public void WennFehlerfreiExceptionMethod_TestfunktionTrhowsException_ShouldNotExcecute2Funktion()
+        {
+            ValidationResultOr<Test> sut = new ValidationResultOr<Test>(new Test());
+            var result = sut.Select(x => x.ThrowsException());
+            
+            result.Select<bool>(x =>
+            {
+                Assert.Fail($"Diese Zeile hätte nicht ausgeführt werden dürfen, da vorher ein Fehler in {nameof(Test.ThrowsException)} aufgetreten ist.");
+                return true;
+            });
+        }
+        #endregion
+
+
+        [Test]
+        public void UsageFeel()
+        {
+            ValidationResultOr<int> test = 5;
+
+            var result = test.Select(x => 5 * x).GetValueOrThrow();
         }
 
-        public class Test
+        [Test]
+        public void METHOD()
         {
-            public Either<ValidationMessage, string> Testfunktion(string input)
-            {
-                if (input == "test")
-                {
-                    return "success";
-                }
+            ValidationResultOr<Buch> buch = new Buch(seiten:5);
 
-                return new ValidationMessage($"{input} war der falsche Input",ValidationLevel.Error);
-            }
+            ValidationResultOr<int> result = buch.Try(x => x.Umblaettern());
             
-            public Either<ValidationMessage, string> ReturnsInfo()
-            {
-                return new ValidationMessage($"info",ValidationLevel.Info);
-            }
-            
-            public Either<ValidationMessage, string> ReturnsNull()
-            {
-                return null;
-            }
-
-            public Either<ValidationMessage,bool> ThrowsException()
-            {
-                throw new System.NotImplementedException();
-            }
         }
+       
     }
 }
