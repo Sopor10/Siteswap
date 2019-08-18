@@ -2,29 +2,31 @@ using System;
 
 namespace Utils.Monad
 {
-    public class Either<TL, TR>
+    public struct Either<TL, TR>
     {
-        protected readonly TL left;
-        protected readonly TR right;
-        protected readonly bool isLeft;
+        private readonly TL left;
+        private readonly TR right;
+        private readonly bool isLeft;
 
-        protected Either(TL left)
+        public Either(TL left)
         {
             this.left = left;
             isLeft = true;
+            right = default;
         }
 
-        protected Either(TR right)
+        public Either(TR right)
         {
             this.right = right;
             isLeft = false;
+            left = default;
         }
 
-//        public static implicit operator Either<TL, TR>(TL left) => new Either<TL, TR>(left);
-//
-//        public static implicit operator Either<TL, TR>(TR right) => new Either<TL, TR>(right);
-//        
-        public virtual T Match<T>(Func<TL, T> leftFunc, Func<TR, T> rightFunc)
+        public static implicit operator Either<TL, TR>(TL left) => new Either<TL, TR>(left);
+
+        public static implicit operator Either<TL, TR>(TR right) => new Either<TL, TR>(right);
+        
+        public T Match<T>(Func<TL, T> leftFunc, Func<TR, T> rightFunc)
         {
             if (isLeft)
             {
@@ -38,7 +40,7 @@ namespace Utils.Monad
 
         public bool IsLeft => isLeft;
 
-        protected internal TL GetLeftUnsafe()
+        public TL GetLeftUnsafe()
         {
             if (!isLeft)
             {
@@ -48,7 +50,7 @@ namespace Utils.Monad
             return left;
         }
 
-        protected internal TR GetRightUnsafe()
+        public TR GetRightUnsafe()
         {
             if (isLeft)
             {
@@ -56,6 +58,14 @@ namespace Utils.Monad
             }
 
             return right;
+        }
+
+        public void DoLeft(Action<TL> func)
+        {
+            if (isLeft)
+            {
+                func.Invoke(left);
+            }
         }
 
     }
