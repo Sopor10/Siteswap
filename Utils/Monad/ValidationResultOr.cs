@@ -5,8 +5,8 @@ namespace Utils.Monad
 {
     public struct ValidationResultOr<TRight> 
     {
-        private readonly bool stammtAusNullZuweisung;
         private Either<ValidationResult, TRight> either;
+        
         public static implicit operator ValidationResultOr<TRight>(TRight right) => new ValidationResultOr<TRight>(right);
 
         public static implicit operator ValidationResultOr<TRight>(ValidationResult validationResult) => new ValidationResultOr<TRight>(validationResult);
@@ -14,53 +14,34 @@ namespace Utils.Monad
         public static implicit operator ValidationResultOr<TRight>(ValidationMessage message) => new ValidationResultOr<TRight>(new ValidationResult(message));
         
         public static implicit operator ValidationResultOr<TRight>(Either<ValidationResult,TRight> either) => new ValidationResultOr<TRight>(either);
-        public static ValidationResultOr<TResult> Some<TResult>(TResult result)
-        {
-            if (result == null)
-            {
-                return new ValidationResultOr<TResult>(new ValidationResult(new ValidationMessage($"Der Typ {typeof(TResult)} darf nicht null sein",
-                    ValidationLevel.Error)), true);
-            }
-            return new ValidationResultOr<TResult>(result);
-        } 
-        
-        public static ValidationResultOr<TResult> Validation<TResult>(ValidationResult result, bool stammtAusNullZuweisung = false)
-        {
-            if (result == null)
-            {
-                return new ValidationResultOr<TResult>(new ValidationResult(new ValidationMessage($"Das Validationresult darf nicht null sein",
-                    ValidationLevel.Error)), true);
-            }
-            return new ValidationResultOr<TResult>(result,stammtAusNullZuweisung);
-        } 
-            
+          
         private ValidationResultOr(ValidationResult validationResult, bool stammtAusNullZuweisung = false)
         {
             either = new Either<ValidationResult, TRight>(validationResult);
-            this.stammtAusNullZuweisung = stammtAusNullZuweisung;
+            this.IsNull = stammtAusNullZuweisung;
         }
 
-        public ValidationResultOr( TRight right) 
+        private ValidationResultOr( TRight right) 
         {
             either = new Either<ValidationResult, TRight>(right);
-            stammtAusNullZuweisung = false;
+            IsNull = false;
         }
 
         private ValidationResultOr(Either<ValidationResult,TRight> either)
         {
             this.either = either;
-            stammtAusNullZuweisung = !either.IsLeft && either.GetRightUnsafe() != null;
+            IsNull = !either.IsLeft && either.GetRightUnsafe() != null;
         }
 
         public ValidationResult ValidationResult => either.GetLeftUnsafe();
 
-        public bool StammtAusNullZuweisung => stammtAusNullZuweisung;
+        public bool IsNull { get; }
 
         public ValidationResultOr<TResult> Try<TResult>(Func<TRight, TResult> func) 
         {
             if (either.IsLeft)
             {
-                return Validation<TResult>(ValidationResult, stammtAusNullZuweisung);
+                return new ValidationResultOr<TResult>(ValidationResult, IsNull);
             }
             
             if (func == null)
@@ -72,26 +53,31 @@ namespace Utils.Monad
             {
                 TResult resultFromFunction = func.Invoke(either.GetRightUnsafe());
 
-                return Some(resultFromFunction);
+                if (resultFromFunction == null)
+                {
+                    return new ValidationResultOr<TResult>(new ValidationResult(new ValidationMessage($"Die Funktion {func.Method} hat null zurückgegeben",ValidationLevel.Error)),true);
+                }
+
+                return resultFromFunction;
             }
             catch (Exception e)
             {
-                return Validation<TResult>(new ValidationResult( new ValidationMessage(e)));
+                return new ValidationResult( new ValidationMessage(e));
             }
         }
        
         public ValidationResultOr<TResult> Try<TResult>(Func<TRight, ValidationResultOr<TResult>> func)
         {
-            if (func == null)
-            {
-                return Validation<TResult>(new ValidationResult(ValidationMessage.Fehler("Hier darf kein null stehen")));
-            }
-            
             if (either.IsLeft)
             {
-                return Validation<TResult>(either.GetLeftUnsafe(),stammtAusNullZuweisung);
+                return new ValidationResultOr<TResult>(either.GetLeftUnsafe(),IsNull);
             }
-
+            
+            if (func == null)
+            {
+                return new ValidationResultOr<TResult>(new ValidationResult(ValidationMessage.Fehler("Hier darf kein null stehen")));
+            }
+            
             try
             {
                 ValidationResultOr<TResult> result = func.Invoke(either.GetRightUnsafe());
@@ -101,7 +87,7 @@ namespace Utils.Monad
                     return result;
                 }
                 var validationMessage = new ValidationMessage($"{typeof(TResult)} darf nicht null sein.", ValidationLevel.Error);
-                return Validation<TResult>(new ValidationResult(validationMessage),true);
+                return new ValidationResultOr<TResult>(new ValidationResult(validationMessage),true);
 
             }
             catch (Exception e)
@@ -111,6 +97,15 @@ namespace Utils.Monad
             }
         }
 
+        public void Try(Action<TRight> func)
+        {
+            if (either.IsLeft)
+            {
+                return;
+            }
+
+            func?.Invoke(either.GetRightUnsafe());
+            }
         public bool HasErrors()
         {
             return either.IsLeft&& either.GetLeftUnsafe().HasErrors();

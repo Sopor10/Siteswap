@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using NUnit.Framework.Internal.Commands;
 using Utils.Monad;
 using Utils.Validation;
 
@@ -11,11 +9,11 @@ namespace UtilsTest.Monad
     {
         public ValidationResultOr<bool> ThrowsExceptionEitherValidationResult()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
         public ValidationResultOr<string> ReturnsValidationResultWithError(string input)
         {
-            return ValidationResultOr<string>.Validation<string>(new ValidationResult(new ValidationMessage($"{input} war der falsche Input",ValidationLevel.Error)));
+            return new ValidationResult(new ValidationMessage($"{input} war der falsche Input",ValidationLevel.Error));
         }
             
         public string ReturnsNull()
@@ -32,16 +30,15 @@ namespace UtilsTest.Monad
     public class Buch
     {
         public Guid Id { get; set; }
-        public List<Seite> Seites { get; set; }
+        public List<Seite> Seites { get; }
         public int aktuelleSeite { get; set; }
 
         public Buch(int seiten)
         {
             Seites = new List<Seite>(seiten);
-//            Seites.SelectMany()
         }
 
-        public ValidationResultOr<Buch> Umblaettern()
+        public ValidationResultOr<Buch> UmblaetternValidationResult()
         {
             if (aktuelleSeite < Seites.Count)
             {
@@ -52,7 +49,18 @@ namespace UtilsTest.Monad
             return new ValidationResult(new ValidationMessage("Das Buch ist zuende.",ValidationLevel.Error));
         }
         
-        public Buch UmblaetternInt()
+        public ValidationResultOr<Buch> UmblaetternValidationMessage()
+        {
+            if (aktuelleSeite < Seites.Count)
+            {
+                aktuelleSeite++;
+                return this;
+            }
+
+            return new ValidationMessage("Das Buch ist zuende.",ValidationLevel.Error);
+        }
+        
+        public Buch UmblaetternNormal()
         {
             if (aktuelleSeite < Seites.Count)
             {
